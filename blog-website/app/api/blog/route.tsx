@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import { connectDB } from "@/app/lib/config/db";
 import BlogModel from "@/app/lib/models/BlogModel";
@@ -6,70 +6,45 @@ import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
 
-
-
-let LoadDB= async()=>{
+// Connect to DB
 await connectDB();
-}
-LoadDB();
 
-// Api upload Blogs to get/show blogs on page
-
-
-export async function GET(request) {
-
+// GET /api/blog
+export async function GET(request: NextRequest) {
   try {
+    const blogId = request.nextUrl.searchParams.get("id");
 
-    let blogId = request.nextUrl.searchParams.get('id');
-
-    // ✅ Single Blog
+    // Single Blog
     if (blogId) {
-
-      // ✅ Check MongoDB ObjectId
-      if (mongoose.Types.ObjectId.isValid(blogId)) {
-
-        let blog = await BlogModel.findById(blogId);
-
-        return NextResponse.json(blog);
-
-      } else {
-
+      if (!mongoose.Types.ObjectId.isValid(blogId)) {
         return NextResponse.json(
           { error: "Invalid MongoDB ID" },
-          { status: 400 }
+          { status: 400 },
         );
-
       }
 
+      const blog = await BlogModel.findById(blogId);
+
+      if (!blog) {
+        return NextResponse.json({ error: "Blog not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(blog);
     }
 
-    // ✅ All Blogs
-    let blogs = await BlogModel.find({}).sort({ createdAt: -1 });
+    // All Blogs
+    const blogs = await BlogModel.find({}).sort({ createdAt: -1 });
 
     return NextResponse.json({ blogs });
-
   } catch (error) {
+    console.error(error);
 
-    console.log(error);
-
-    return NextResponse.json(
-      { error: "Server Error" },
-      { status: 500 }
-    );
-
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
-
 }
 
-
-
-
-
-
-
-
 // Api endpiont to upload blog Data
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     // await connectDB();
 
@@ -78,28 +53,23 @@ export async function POST(request) {
 
     const image = formData.get("image");
 
-    // ✅ Check image
     if (!image || typeof image === "string") {
       return NextResponse.json(
         { success: false, error: "No image uploaded" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // ✅ Convert image to buffer
     const imageByteData = await image.arrayBuffer();
     const buffer = Buffer.from(imageByteData);
 
-    // ✅ Safe file name
     const fileName = `${timestamp}_${image.name || "image.png"}`;
-    const path = `./public/${fileName}`;
+    const filePath = `./public/${fileName}`;
 
-    // ✅ Save file
-    await writeFile(path, buffer);
+    await writeFile(filePath, buffer);
 
     const imgUrl = `/${fileName}`;
 
-    // ✅ Validate fields
     const blogData = {
       title: formData.get("title") || "",
       description: formData.get("description") || "",
@@ -109,15 +79,16 @@ export async function POST(request) {
       authorImg: formData.get("authorImg") || "",
     };
 
-    // ❗ Optional: prevent empty title
     if (!blogData.title) {
-      return NextResponse.json({
-        success: false,
-        error: "Title is required",
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Title is required",
+        },
+        { status: 400 },
+      );
     }
 
-    // ✅ Save to DB
     await BlogModel.create(blogData);
 
     return NextResponse.json({
@@ -125,63 +96,71 @@ export async function POST(request) {
       msg: "Blog saved successfully",
       imgUrl,
     });
-
   } catch (error) {
-    console.error(error); // 👈 important for debugging
+    console.error(error);
 
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }
 
 // Delete BLoG
-export async function DELETE(request) {
-
+export async function DELETE(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ success: false, message: "ID required" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "ID required" },
+        { status: 400 },
+      );
     }
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "Invalid ID" },
+        { status: 400 },
+      );
     }
 
-    // 🔥 Find blog first
     const blog = await BlogModel.findById(id);
 
     if (!blog) {
-      return NextResponse.json({ success: false, message: "Blog not found" });
+      return NextResponse.json(
+        { success: false, message: "Blog not found" },
+        { status: 404 },
+      );
     }
 
-    // 🧹 Delete image from /public folder
     if (blog.image) {
-
       const imagePath = path.join(process.cwd(), "public", blog.image);
 
       if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath); // delete file
+        fs.unlinkSync(imagePath);
       }
     }
 
-    // 🗑️ Delete blog from DB
     await BlogModel.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,
-      message: "Blog and image deleted successfully"
+      message: "Blog and image deleted successfully",
     });
-
   } catch (error) {
-
     return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
     );
   }
 }

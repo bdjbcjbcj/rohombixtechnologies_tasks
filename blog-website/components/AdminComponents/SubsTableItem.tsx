@@ -1,4 +1,5 @@
- import React from 'react'
+ import { Trash2 } from 'lucide-react';
+import React from 'react'
  
  const SubsTableItem = ({email,id,deleteEmail}) => {
     
@@ -9,7 +10,14 @@
             {email?email:"No Emails"}
         </th>
         <td className='px-6 py-4 hidden sm:block'>{date}</td>
-        <td onClick={() =>deleteEmail(id)} className='px-6 py-4 cursor-pointer'>❌</td>
+       <td className="text-center">
+  <button
+    onClick={() => deleteEmail(id)}
+    className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
+  >
+    <Trash2 size={18} />
+  </button>
+</td>
     </tr>
    )
  }

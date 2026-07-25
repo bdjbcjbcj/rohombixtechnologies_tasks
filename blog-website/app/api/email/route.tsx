@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/app/lib/config/db";
 import EmailModel from "@/app/lib/models/EmailModel";
 import mongoose from "mongoose";
 
-export async function POST(request) {
+export async function POST(request:NextRequest) {
 
   try {
 
@@ -36,13 +36,17 @@ export async function POST(request) {
       message: "Subscribed successfully"
     });
 
-  } catch (error) {
+  }catch (error) {
+  console.error(error);
 
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      message: error instanceof Error ? error.message : "Internal Server Error",
+    },
+    { status: 500 }
+  );
+}
 }
 
 
@@ -62,23 +66,24 @@ export async function GET() {
       subscribers
     });
 
-  } catch (error) {
+  }catch (error) {
+  console.error(error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      message: error instanceof Error ? error.message : "Internal Server Error",
+    },
+    { status: 500 }
+  );
+}
 }
 
 
 
 
 // DELETE SUBSCRIBER
-export async function DELETE(request) {
+export async function DELETE(request:NextRequest) {
 
   try {
 
@@ -115,14 +120,15 @@ export async function DELETE(request) {
       message: "Subscriber deleted successfully"
     });
 
-  } catch (error) {
+  }catch (error) {
+  console.error(error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: error.message
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      message: error instanceof Error ? error.message : "Internal Server Error",
+    },
+    { status: 500 }
+  );
+}
 }

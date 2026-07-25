@@ -2,8 +2,15 @@ import { blog_data,assets } from '@/Assets/assets'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+interface BlogItemProps {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  image: string;
+}
 
-const BlogItem = ({title,description,category,image,id}) => {
+const BlogItem = ({title,description,category,image,id}:BlogItemProps) => {
   return (
     <div className='max-w-80 sm:max-w-72 border border-black bg-white my-8 hover:shadow-[-7px_7px_0_black]'>
       <Link href={`/blogs/${id}`}>

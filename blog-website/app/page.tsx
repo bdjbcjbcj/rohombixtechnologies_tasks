@@ -1,6 +1,7 @@
 'use client'
 
 import BlogList from "@/components/BlogList";
+import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { ToastContainer } from "react-toastify";
@@ -13,6 +14,7 @@ export default function Home() {
     <ToastContainer theme="dark"/>
     <Header/>
     <BlogList/>
+    <ContactSection/>
     <Footer/>
    </div>
   );
